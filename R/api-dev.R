@@ -64,6 +64,11 @@ with_active_span_dev <- function(span, expr, end_on_exit = FALSE) {
   })
 }
 
+get_active_span_dev <- function() {
+    trc <- get_tracer()
+    trc$get_active_span()
+}
+
 get_active_span_context_dev <- function() {
     trc <- get_tracer()
     trc$get_active_span_context()
@@ -142,91 +147,84 @@ log_dev <- function(
   msg,
   ...,
   severity = "info",
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, severity, ..., .envir = .envir)
+    logger$log(msg, severity, ...)
     invisible(logger)
 }
 
 log_trace_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "trace", ..., .envir = .envir)
+    logger$log(msg, "trace", ...)
     invisible(logger)
 }
 
 log_debug_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "debug", ..., .envir = .envir)
+    logger$log(msg, "debug", ...)
     invisible(logger)
 }
 
 log_info_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "info", ..., .envir = .envir)
+    logger$log(msg, "info", ...)
     invisible(logger)
 }
 
 log_warn_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "warn", ..., .envir = .envir)
+    logger$log(msg, "warn", ...)
     invisible(logger)
 }
 
 log_error_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "error", ..., .envir = .envir)
+    logger$log(msg, "error", ...)
     invisible(logger)
 }
 
 log_fatal_dev <- function(
   msg,
   ...,
-  .envir = parent.frame(),
   logger = NULL
 ) {
     if (!inherits(logger, "otel_logger")) {
       logger <- get_logger()
     }
-    logger$log(msg, "fatal", ..., .envir = .envir)
+    logger$log(msg, "fatal", ...)
     invisible(logger)
 }
 
