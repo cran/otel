@@ -39,15 +39,15 @@ overwrites the first.
 # OTEL_TRACES_EXPORTER=http OTEL_INSTRUMENT_R_PKGS=dplyr,tidyr R -q -f script.R
 }
 \seealso{
-\link{Environment Variables}
+'\link{Environment Variables}' needed to enable OpenTelemetry recording.
 
-Other OpenTelemetry trace API: 
-\code{\link{end_span}()},
-\code{\link{is_tracing_enabled}()},
-\code{\link{local_active_span}()},
-\code{\link{start_local_active_span}()},
-\code{\link{start_span}()},
+Other OpenTelemetry trace API:
+\code{\link[=end_span]{end_span()}},
+\code{\link[=is_tracing_enabled]{is_tracing_enabled()}},
+\code{\link[=local_active_span]{local_active_span()}},
+\code{\link[=start_local_active_span]{start_local_active_span()}},
+\code{\link[=start_span]{start_span()}},
 \code{\link{tracing-constants}},
-\code{\link{with_active_span}()}
+\code{\link[=with_active_span]{with_active_span()}}
 }
 \concept{OpenTelemetry trace API}

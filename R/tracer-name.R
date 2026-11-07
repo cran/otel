@@ -69,12 +69,15 @@
 #'
 #' @param name Custom tracer name. If `NULL` then otel will construct a
 #'   a tracer (meter, logger) name according to the algorithm detailed
-#'   below.
+#'   below. The calling package is detected even if `name` is given, so
+#'   the package name can be used in `OTEL_R_EMIT_SCOPES` and
+#'   `OTEL_R_SUPPRESS_SCOPES`.
 #'
 #' @return A list with entries:
 #'
 #'   * `name`: The supplied or auto-detected tracer name.
-#'   * `package`: Auto-detected package name or `NA`.
+#'   * `package`: Auto-detected package name, or `"R"` if called from
+#'     the global environment or base R.
 #'   * `on`: Whether tracing is enabled for this package.
 #'
 #' @aliases otel_tracer_name
@@ -83,32 +86,27 @@
 #' default_tracer_name()
 
 default_tracer_name <- function(name = NULL) {
-  if (!is.null(name)) {
-    ret <- list(name = name, package = NA_character_)
-    ret[["on"]] <- is_scope_on(ret)
-    return(ret)
-  }
-
+  # We look up the calling package even if `name` is given, so
+  # OTEL_R_EMIT_SCOPES and OTEL_R_SUPPRESS_SCOPES can match the package
+  # name (#52).
+  package <- "R"
   for (n in 1:sys.nframe()) {
     top <- topenv(parent.frame(n), NULL)
     topname <- environmentName(top)
     if (topname == "" || topname == "otel" || topname == "otelsdk") {
       # keep going
     } else if (topname == "base" || topname == "R_GlobalEnv") {
-      nm <- get0("otel_tracer_name", .GlobalEnv, inherits = FALSE) %||%
-        "org.r-project.R"
-      ret <- list(name = nm, package = "R")
-      ret[["on"]] <- is_scope_on(ret)
-      return(ret)
+      name <- name %||% get0("otel_tracer_name", .GlobalEnv, inherits = FALSE)
+      break
     } else {
-      nm <- get0("otel_tracer_name", top, inherits = FALSE) %||%
+      name <- name %||%
+        get0("otel_tracer_name", top, inherits = FALSE) %||%
         paste0("r.package.", topname)
-      ret <- list(name = nm, package = topname)
-      ret[["on"]] <- is_scope_on(ret)
-      return(ret)
+      package <- topname
+      break
     }
   }
-  ret <- list(name = "org.r-project.R", package = "R")
+  ret <- list(name = name %||% "org.r-project.R", package = package)
   ret[["on"]] <- is_scope_on(ret)
   ret
 }
@@ -123,13 +121,23 @@ is_scope_on <- function(scope) {
     return(TRUE)
   }
 
-  if (!is.null(inc)) {
-    inc <- trimws(strsplit(inc, ",")[[1]])
-  }
-  if (!is.null(exc)) {
-    exc <- trimws(strsplit(exc, ",")[[1]])
+  # A scope is on if its name or package matches an include pattern,
+  # and off if its name or package matches an exclude pattern.
+  cands <- c(scope$name, scope$package)
+  cands <- cands[!is.na(cands)]
+  matches <- function(pats) {
+    pats <- trimws(strsplit(pats, ",")[[1]])
+    for (pat in pats) {
+      if (any(grepl(utils::glob2rx(pat), cands))) return(TRUE)
+    }
+    FALSE
   }
 
-  flt <- glob_filter(c(scope$name, scope$package), inc, exc)
-  length(flt) > 0
+  if (!is.null(inc) && !matches(inc)) {
+    return(FALSE)
+  }
+  if (!is.null(exc) && matches(exc)) {
+    return(FALSE)
+  }
+  TRUE
 }

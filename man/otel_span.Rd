@@ -18,6 +18,11 @@ a span.
 Call \code{\link[=end_span]{end_span()}} to end a span explicitly. (See
 \code{\link[=start_local_active_span]{start_local_active_span()}} and \code{\link[=local_active_span]{local_active_span()}} to end a span
 automatically.)
+
+With otelsdk 0.3.0 or later, span methods do not throw errors. If a
+method fails, it emits a message of class \code{otel_error_message} and
+returns a default value, usually the span itself. Set the \code{OTEL_ENV}
+environment variable to \code{dev} to turn these errors into R errors.
 }
 \section{Lifetime}{
 The span starts when it is created in the \code{\link[=start_local_active_span]{start_local_active_span()}}
@@ -65,6 +70,18 @@ You can also make the new span be a root span, by setting \code{parent = NA}
 in \code{options} to the \code{\link[=start_local_active_span]{start_local_active_span()}} or \code{\link[=start_span]{start_span()}} call.
 }
 
+\section{Array attributes}{
+A length one R vector is recorded as a scalar attribute, and longer
+vectors are recorded as arrays. To record a length one vector as an
+array, make it an R array, e.g. with \code{\link[=as.array]{as.array()}}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{span$set_attribute("gen_ai.response.finish_reasons", as.array("stop"))
+}\if{html}{\out{</div>}}
+
+This works for span attributes, event attributes and link attributes,
+and also for the attributes of log records and metric measurements.
+}
+
 \section{Methods}{
 \subsection{\code{span$add_event()}}{
 
@@ -81,7 +98,7 @@ Add a single event to the span.
 \item \code{attributes}: Attributes to add to the event. See \code{\link[=as_attributes]{as_attributes()}}
 for supported R types. You may also use \code{\link[=as_attributes]{as_attributes()}} to convert
 an R object to an OpenTelemetry attribute value.
-\item \code{timestamp}: A \link[base:DateTimeClasses]{base::POSIXct} object. If missing, the current time is
+\item \code{timestamp}: A \link[base:POSIXct]{base::POSIXct} object. If missing, the current time is
 used.
 }
 }
@@ -116,7 +133,7 @@ nothing.
 \itemize{
 \item \code{options}: Named list of options. Possible entry:
 \itemize{
-\item \code{end_steady_time}: A \link[base:DateTimeClasses]{base::POSIXct} object that will be used as
+\item \code{end_steady_time}: A \link[base:POSIXct]{base::POSIXct} object that will be used as
 a steady timer.
 }
 \item \code{status_code}: Span status code to set before ending the span, see
@@ -225,18 +242,43 @@ The span object itself, invisibly.
 
 }
 
+\subsection{\code{span$set_attributes()}}{
+
+Set multiple attributes at once. It is better to set attributes at span
+creation, instead of calling this method later, since samplers can only
+make decisions based on attributes present at span creation.
+\subsection{Usage}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{span$set_attributes(attributes)
+}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\itemize{
+\item \code{attributes}: A named list of attributes. See \code{\link[=as_attributes]{as_attributes()}} for
+supported R types. You may also use \code{\link[=as_attributes]{as_attributes()}} to convert an
+R object to OpenTelemetry attributes.
+}
+}
+
+\subsection{Value}{
+
+The span object itself, invisibly.
+}
+
+}
+
 \subsection{\code{span$set_status()}}{
 
 Set the status of the span.
 
-If the span was created with \code{\link[=start_local_active_span]{start_local_active_span()}}, or it was
-ended automatically with \code{\link[=local_active_span]{local_active_span()}} or \code{\link[=with_active_span]{with_active_span()}},
-then otel sets the status of the span automatically to \code{ok} or \code{error},
-depending on whether an error happened in the frame the span was
-activated for.
-
-Otherwise the default span status is \code{unset}, and you need to set it
-manually.
+The default span status is \code{unset}. If the span was created with
+\code{\link[=start_local_active_span]{start_local_active_span()}}, or it was ended automatically with
+\code{\link[=local_active_span]{local_active_span()}} or \code{\link[=with_active_span]{with_active_span()}}, and an error happened in
+the frame the span was activated for, then otel sets the status of the
+span automatically to \code{error}. Otherwise otel leaves the status as
+\code{unset}. Set it to \code{ok} manually to mark a span as explicitly free of
+errors.
 \subsection{Usage}{
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{span$set_status(status_code, description = NULL)
@@ -298,9 +340,9 @@ fn <- function() {
 fn()
 }
 \seealso{
-Other low level trace API: 
-\code{\link{get_default_tracer_provider}()},
-\code{\link{get_tracer}()},
+Other low level trace API:
+\code{\link[=get_default_tracer_provider]{get_default_tracer_provider()}},
+\code{\link[=get_tracer]{get_tracer()}},
 \code{\link{otel_span_context}},
 \code{\link{otel_tracer}},
 \code{\link{otel_tracer_provider}},

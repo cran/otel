@@ -41,6 +41,9 @@ metrics to the standard error.
 metrics through HTTP, using the OpenTelemetry Protocol (OTLP).
 \item \code{otlp/file} uses \link[otelsdk:meter_provider_file]{otelsdk::meter_provider_file} to write metrics
 to a JSONL file.
+\item \code{otlp/stdout} uses \link[otelsdk:meter_provider_file]{otelsdk::meter_provider_file} to write metrics
+to the standard output, in OTLP JSON format. This needs
+otelsdk 0.2.4.9001 or later.
 \item \verb{<package>::<provider>}: will select the \verb{<provider>} object from
 the \verb{<package>} package to use as a meter provider. It calls
 \verb{<package>::<provider>$new()} to create the new meter provider.
@@ -52,8 +55,8 @@ then it throws an error.
 get_default_meter_provider()
 }
 \seealso{
-Other low level metrics API: 
-\code{\link{get_meter}()},
+Other low level metrics API:
+\code{\link[=get_meter]{get_meter()}},
 \code{\link{meter_provider_noop}},
 \code{\link{otel_counter}},
 \code{\link{otel_gauge}},

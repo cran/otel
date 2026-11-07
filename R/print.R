@@ -15,6 +15,9 @@ format.otel_tracer_provider <- function(x, ...) {
     if ("flush" %in% names(x)) {
       "  flush()"
     },
+    if ("shutdown" %in% names(x)) {
+      "  shutdown()"
+    },
     if ("get_spans" %in% names(x)) {
       "  get_spans()"
     },
@@ -73,6 +76,9 @@ format.otel_span <- function(x, ...) {
     },
     if ("set_attribute" %in% names(x)) {
       "  set_attribute(name, value)"
+    },
+    if ("set_attributes" %in% names(x)) {
+      "  set_attributes(attributes)"
     },
     if ("set_status" %in% names(x)) {
       "  set_status(status_code, description)"
@@ -134,6 +140,9 @@ format.otel_logger_provider <- function(x, ...) {
     },
     if ("flush" %in% names(x)) {
       "  flush()"
+    },
+    if ("shutdown" %in% names(x)) {
+      "  shutdown()"
     },
     NULL
   )
@@ -226,7 +235,7 @@ format.otel_meter <- function(x, ...) {
       "  create_up_down_counter(name, description, unit)"
     },
     if ("create_histogram" %in% names(x)) {
-      "  create_histogram(name, description, unit)"
+      "  create_histogram(name, description, unit, boundaries)"
     },
     if ("create_gauge" %in% names(x)) {
       "  create_gauge(name, description, unit)"

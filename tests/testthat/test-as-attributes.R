@@ -4,6 +4,10 @@ test_that("simple", {
     OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT = NA_character_
   )
 
+  expect_equal(
+    as_attributes(NULL),
+    structure(list(), names = character())
+  )
   ok <- list(a = "", b = FALSE, c = 1:3 / 2, d = 1:4)
   expect_equal(as_attributes(ok), ok)
 })
@@ -88,4 +92,34 @@ test_that("print unsupported types", {
   expect_snapshot(
     as_attributes(list(mtcars[1:2, 1:4]))
   )
+})
+
+test_that("as_attributes keeps length one arrays", {
+  fake(as_attributes, "otelsdk_has_full_api", TRUE)
+  withr::local_envvar(OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT = 2)
+  attr <- as_attributes(list(
+    chr = as.array("stop"),
+    long = as.array(letters),
+    inf = as.array(Inf),
+    mat = matrix(1:4, 2),
+    plain = "stop"
+  ))
+  expect_identical(attr$chr, as.array("stop"))
+  # longer arrays are recorded as arrays anyway
+  expect_identical(attr$long, c("a", "b"))
+  expect_identical(attr$inf, as.array("Inf"))
+  expect_identical(attr$mat, 1:2)
+  expect_identical(attr$plain, "stop")
+})
+
+test_that("as_attributes warns about length one arrays with old otelsdk", {
+  fake(as_attributes, "otelsdk_has_full_api", FALSE)
+  expect_snapshot(
+    attr <- as_attributes(list(
+      chr = as.array("stop"),
+      long = as.array(letters),
+      plain = "stop"
+    ))
+  )
+  expect_identical(attr$chr, as.array("stop"))
 })

@@ -1,6 +1,6 @@
 Package: otel
 Title: OpenTelemetry R API
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: 
     person("Gábor", "Csárdi", , "csardi.gabor@gmail.com", role = c("aut", "cre"))
 Description: High-quality, ubiquitous, and portable telemetry to enable
@@ -14,19 +14,17 @@ Description: High-quality, ubiquitous, and portable telemetry to enable
     package for OpenTelemetry.
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.3.2.9000
 Depends: R (>= 3.6.0)
-Suggests: callr, cli, glue, jsonlite, otelsdk, processx, shiny,
-        spelling, testthat (>= 3.0.0), utils, withr
+Suggests: callr, cli, glue, jsonlite, otelsdk (>= 0.2.4), processx,
+        shiny, spelling, testthat (>= 3.0.0), utils, withr
 Config/Needs/website: tidyverse/tidytemplate
 Config/testthat/edition: 3
 URL: https://otel.r-lib.org, https://github.com/r-lib/otel
-Additional_repositories:
-        https://github.com/r-lib/otelsdk/releases/download/devel
 BugReports: https://github.com/r-lib/otel/issues
+Config/roxygen2/version: 8.1.1
 NeedsCompilation: no
-Packaged: 2025-08-29 12:46:28 UTC; gaborcsardi
+Packaged: 2026-11-07 14:37:49 UTC; gaborcsardi
 Author: Gábor Csárdi [aut, cre]
 Maintainer: Gábor Csárdi <csardi.gabor@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-08-29 13:30:07 UTC
+Date/Publication: 2026-11-07 15:20:02 UTC

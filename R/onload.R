@@ -4,7 +4,8 @@ otel_cache_vars <- c(
   "logger_provider",
   "meter_provider",
   "tracer_app",
-  "instruments"
+  "instruments",
+  "otel_tracer"
 )
 
 # used by otelsdk
@@ -38,8 +39,71 @@ the$mode <- "prod"
   otel_clean_cache()
   setup_dev_env()
   setup_r_trace()
+  setup_otelsdk_check()
 }
 # nocov end
+
+# Minimum otelsdk version that otel works with.
+otelsdk_min_version <- "0.2.4"
+
+# Minimum otelsdk version that implements the full otel API.
+otelsdk_full_version <- "0.2.4.9005"
+
+# Features that need otelsdk_full_version, for the message we show if
+# an older otelsdk is loaded.
+otelsdk_full_features <- c(
+  "the `set_attributes()` method of spans",
+  "the `boundaries` argument of `create_histogram()`",
+  "length one array attributes",
+  "keeping the `unset` status of automatically ended spans",
+  "the 'otlp/stdout' exporter"
+)
+
+otelsdk_loaded_version <- function() {
+  package_version(getNamespaceVersion("otelsdk"))
+}
+
+# TRUE if otelsdk is not loaded, so we cannot tell yet.
+otelsdk_has_full_api <- function() {
+  !isNamespaceLoaded("otelsdk") ||
+    otelsdk_loaded_version() >= otelsdk_full_version
+}
+
+check_otelsdk_version <- function() {
+  ver <- otelsdk_loaded_version()
+  if (ver < otelsdk_min_version) {
+    warning(
+      "otel needs otelsdk ",
+      otelsdk_min_version,
+      " or later, but ",
+      "otelsdk ",
+      format(ver),
+      " is loaded. Please update otelsdk.",
+      call. = FALSE
+    )
+  } else if (ver < otelsdk_full_version) {
+    packageStartupMessage(
+      "otelsdk ",
+      format(ver),
+      " is loaded. These otel features need otelsdk ",
+      otelsdk_full_version,
+      " or later:\n",
+      paste0("* ", otelsdk_full_features, "\n", collapse = ""),
+      "Update otelsdk to use them."
+    )
+  }
+}
+
+setup_otelsdk_check <- function() {
+  if ("otelsdk" %in% loadedNamespaces()) {
+    check_otelsdk_version()
+  } else {
+    setHook(
+      packageEvent("otelsdk", "onLoad"),
+      function(...) check_otelsdk_version()
+    )
+  }
+}
 
 setup_dev_env <- function(envir = asNamespace(.packageName)) {
   ev <- tolower(Sys.getenv("OTEL_ENV"))

@@ -10,13 +10,16 @@ default_tracer_name(name = NULL)
 \arguments{
 \item{name}{Custom tracer name. If \code{NULL} then otel will construct a
 a tracer (meter, logger) name according to the algorithm detailed
-below.}
+below. The calling package is detected even if \code{name} is given, so
+the package name can be used in \code{OTEL_R_EMIT_SCOPES} and
+\code{OTEL_R_SUPPRESS_SCOPES}.}
 }
 \value{
 A list with entries:
 \itemize{
 \item \code{name}: The supplied or auto-detected tracer name.
-\item \code{package}: Auto-detected package name or \code{NA}.
+\item \code{package}: Auto-detected package name, or \code{"R"} if called from
+the global environment or base R.
 \item \code{on}: Whether tracing is enabled for this package.
 }
 }
@@ -59,7 +62,7 @@ If you don't like the default tracer name, you can call \code{\link[=get_tracer]
 
 This is the detailed algorithm that otel uses in \code{default_tracer_name}:
 \itemize{
-\item Using \code{\link[base:ns-topenv]{base::topenv()}} it finds the calling package (or other top
+\item Using \code{\link[base:topenv]{base::topenv()}} it finds the calling package (or other top
 level environment), recursively.
 \item It ignores the otel and otelsdk packages while searching.
 \item If it finds the base environment or the global environment, then

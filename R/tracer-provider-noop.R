@@ -12,7 +12,7 @@
 #'
 #' Typically the tracer provider is created automatically, at the first
 #' [start_local_active_span()] or [start_span()] call. otel decides which
-#' tracer provider class to use based on [Environment Variables].
+#' tracer provider class to use based on '[Environment Variables]'.
 #'
 #' # Implementations
 #'
@@ -83,6 +83,22 @@
 #'
 #' Nothing.
 #'
+# -------------------------------------------------------------------------
+#' ## `tracer_provider$shutdown()`
+#'
+#' Stop the tracer provider. Flushes any buffered spans and stops
+#' emitting spans.
+#'
+#' ### Usage
+#'
+#' ```r
+#' tracer_provider$shutdown()
+#' ```
+#'
+#' ### Value
+#'
+#' Nothing.
+#'
 #' @name otel_tracer_provider
 #' @return Not applicable.
 #' @family low level trace API
@@ -120,6 +136,10 @@ tracer_provider_noop <- list(
           tracer_noop$new(name, version, schema_url, attributes)
         },
         flush = function() {
+          # noop
+          invisible(self)
+        },
+        shutdown = function() {
           # noop
           invisible(self)
         },
@@ -279,6 +299,11 @@ tracer_noop <- list(
 #' [start_local_active_span()] and [local_active_span()] to end a span
 #' automatically.)
 #'
+#' With otelsdk 0.3.0 or later, span methods do not throw errors. If a
+#' method fails, it emits a message of class `otel_error_message` and
+#' returns a default value, usually the span itself. Set the `OTEL_ENV`
+#' environment variable to `dev` to turn these errors into R errors.
+#'
 #' # Lifetime
 #'
 #' The span starts when it is created in the [start_local_active_span()]
@@ -323,6 +348,19 @@ tracer_noop <- list(
 #' Alternatively, you can set the parent span of the new span manually.
 #' You can also make the new span be a root span, by setting `parent = NA`
 #' in `options` to the [start_local_active_span()] or [start_span()] call.
+#'
+#' # Array attributes
+#'
+#' A length one R vector is recorded as a scalar attribute, and longer
+#' vectors are recorded as arrays. To record a length one vector as an
+#' array, make it an R array, e.g. with [as.array()]:
+#'
+#' ```r
+#' span$set_attribute("gen_ai.response.finish_reasons", as.array("stop"))
+#' ```
+#'
+#' This works for span attributes, event attributes and link attributes,
+#' and also for the attributes of log records and metric measurements.
 #'
 #' # Methods
 
@@ -473,18 +511,40 @@ tracer_noop <- list(
 #' The span object itself, invisibly.
 #'
 # -------------------------------------------------------------------------
+#' ## `span$set_attributes()`
+#'
+#' Set multiple attributes at once. It is better to set attributes at span
+#' creation, instead of calling this method later, since samplers can only
+#' make decisions based on attributes present at span creation.
+#'
+#' ### Usage
+#'
+#' ```r
+#' span$set_attributes(attributes)
+#' ```
+#'
+#' ### Arguments
+#'
+#' * `attributes`: A named list of attributes. See [as_attributes()] for
+#'   supported R types. You may also use [as_attributes()] to convert an
+#'   R object to OpenTelemetry attributes.
+#'
+#' ### Value
+#'
+#' The span object itself, invisibly.
+#'
+# -------------------------------------------------------------------------
 #' ## `span$set_status()`
 #'
 #' Set the status of the span.
 #'
-#' If the span was created with [start_local_active_span()], or it was
-#' ended automatically with [local_active_span()] or [with_active_span()],
-#' then otel sets the status of the span automatically to `ok` or `error`,
-#' depending on whether an error happened in the frame the span was
-#' activated for.
-#'
-#' Otherwise the default span status is `unset`, and you need to set it
-#' manually.
+#' The default span status is `unset`. If the span was created with
+#' [start_local_active_span()], or it was ended automatically with
+#' [local_active_span()] or [with_active_span()], and an error happened in
+#' the frame the span was activated for, then otel sets the status of the
+#' span automatically to `error`. Otherwise otel leaves the status as
+#' `unset`. Set it to `ok` manually to mark a span as explicitly free of
+#' errors.
 #'
 #' ### Usage
 #'
@@ -562,6 +622,10 @@ span_noop <- list(
           invisible(self)
         },
 
+        set_attributes = function(attributes = NULL) {
+          invisible(self)
+        },
+
         add_event = function(name, attributes = NULL, timestamp = NULL) {
           invisible(self)
         },
@@ -585,7 +649,11 @@ span_noop <- list(
           invisible(self)
         },
 
-        record_exception = function(attributes = NULL) {
+        record_exception = function(
+          error_condition,
+          attributes = NULL,
+          ...
+        ) {
           invisible(self)
         },
 

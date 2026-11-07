@@ -20,7 +20,7 @@ Usually there is a single meter provider for an R app or script.
 Typically the meter provider is created automatically, at the first
 \code{\link[=counter_add]{counter_add()}}, \code{\link[=up_down_counter_add]{up_down_counter_add()}}, \code{\link[=histogram_record]{histogram_record()}},
 \code{\link[=gauge_record]{gauge_record()}} or \code{\link[=get_meter]{get_meter()}} call. otel decides which meter
-provider class to use based on \link{Environment Variables}.
+provider class to use based on '\link{Environment Variables}'.
 }
 \section{Implementations}{
 Note that this list is updated manually and may be incomplete.
@@ -101,7 +101,7 @@ Nothing.
 Stop the meter provider. Stops collecting and emitting measurements.
 \subsection{Usage}{
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{meter_provider$shurdown()
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{meter_provider$shutdown()
 }\if{html}{\out{</div>}}
 }
 
@@ -119,9 +119,9 @@ mtr <- mp$get_meter()
 mtr$is_enabled()
 }
 \seealso{
-Other low level metrics API: 
-\code{\link{get_default_meter_provider}()},
-\code{\link{get_meter}()},
+Other low level metrics API:
+\code{\link[=get_default_meter_provider]{get_default_meter_provider()}},
+\code{\link[=get_meter]{get_meter()}},
 \code{\link{meter_provider_noop}},
 \code{\link{otel_counter}},
 \code{\link{otel_gauge}},

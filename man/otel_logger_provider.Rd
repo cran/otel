@@ -18,7 +18,7 @@ Usually there is a single logger provider for an R app or script.
 
 Typically the logger provider is created automatically, at the first
 \code{\link[=log]{log()}} call. otel decides which logger provider class to use based on
-\link{Environment Variables}.
+'\link{Environment Variables}'.
 }
 \section{Implementations}{
 Note that this list is updated manually and may be incomplete.
@@ -92,6 +92,23 @@ Nothing.
 }
 
 }
+
+\subsection{\code{logger_provider$shutdown()}}{
+
+Stop the logger provider. Flushes any buffered logs and stops
+emitting logs.
+\subsection{Usage}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{logger_provider$shutdown()
+}\if{html}{\out{</div>}}
+}
+
+\subsection{Value}{
+
+Nothing.
+}
+
+}
 }
 
 \examples{
@@ -100,9 +117,9 @@ lgr <- lp$get_logger()
 lgr$is_enabled()
 }
 \seealso{
-Other low level logs API: 
-\code{\link{get_default_logger_provider}()},
-\code{\link{get_logger}()},
+Other low level logs API:
+\code{\link[=get_default_logger_provider]{get_default_logger_provider()}},
+\code{\link[=get_logger]{get_logger()}},
 \code{\link{logger_provider_noop}},
 \code{\link{otel_logger}}
 }

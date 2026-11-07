@@ -18,7 +18,7 @@ Usually there is a single tracer provider for an R app or script.
 
 Typically the tracer provider is created automatically, at the first
 \code{\link[=start_local_active_span]{start_local_active_span()}} or \code{\link[=start_span]{start_span()}} call. otel decides which
-tracer provider class to use based on \link{Environment Variables}.
+tracer provider class to use based on '\link{Environment Variables}'.
 }
 \section{Implementations}{
 Note that this list is updated manually and may be incomplete.
@@ -93,6 +93,23 @@ Nothing.
 }
 
 }
+
+\subsection{\code{tracer_provider$shutdown()}}{
+
+Stop the tracer provider. Flushes any buffered spans and stops
+emitting spans.
+\subsection{Usage}{
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{tracer_provider$shutdown()
+}\if{html}{\out{</div>}}
+}
+
+\subsection{Value}{
+
+Nothing.
+}
+
+}
 }
 
 \examples{
@@ -101,9 +118,9 @@ trc <- tp$get_tracer()
 trc$is_enabled()
 }
 \seealso{
-Other low level trace API: 
-\code{\link{get_default_tracer_provider}()},
-\code{\link{get_tracer}()},
+Other low level trace API:
+\code{\link[=get_default_tracer_provider]{get_default_tracer_provider()}},
+\code{\link[=get_tracer]{get_tracer()}},
 \code{\link{otel_span}},
 \code{\link{otel_span_context}},
 \code{\link{otel_tracer}},

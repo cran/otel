@@ -14,7 +14,7 @@
 #' Typically the meter provider is created automatically, at the first
 #' [counter_add()], [up_down_counter_add()], [histogram_record()],
 #' [gauge_record()] or [get_meter()] call. otel decides which meter
-#' provider class to use based on [Environment Variables].
+#' provider class to use based on '[Environment Variables]'.
 #'
 #' # Implementations
 #'
@@ -93,7 +93,7 @@
 #' ### Usage
 #'
 #' ```r
-#' meter_provider$shurdown()
+#' meter_provider$shutdown()
 #' ```
 #'
 #' ### Value
@@ -257,7 +257,7 @@ meter_provider_noop <- list(
 #' ### Usage
 #'
 #' ```r
-#' create_histogram(name, description = NULL, unit = NULL)
+#' create_histogram(name, description = NULL, unit = NULL, boundaries = NULL)
 #' ```
 #'
 #' ### Arguments
@@ -265,6 +265,12 @@ meter_provider_noop <- list(
 #' - `name`: Name of the instrument.
 #' - `description`: Optional description.
 #' - `unit`: `r doc_arg()[["unit"]]`
+#' - `boundaries`: Optional numeric vector of explicit bucket boundaries,
+#'   in increasing order. This is an [advisory parameter](
+#'   https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-advisory-parameters),
+#'   the SDK may ignore it, e.g. if a view configures different
+#'   boundaries for the histogram. If `NULL`, the default boundaries
+#'   of the SDK are used.
 #'
 #' ### Value
 #'
@@ -326,9 +332,10 @@ meter_noop <- list(
         create_histogram = function(
           name,
           description = NULL,
-          unit = NULL
+          unit = NULL,
+          boundaries = NULL
         ) {
-          histogram_noop$new(name, description, unit)
+          histogram_noop$new(name, description, unit, boundaries)
         },
         create_gauge = function(
           name,

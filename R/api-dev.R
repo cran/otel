@@ -64,23 +64,23 @@ with_active_span_dev <- function(span, expr, end_on_exit = FALSE) {
   })
 }
 
-get_active_span_dev <- function() {
-    trc <- get_tracer()
+get_active_span_dev <- function(tracer = NULL) {
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span()
 }
 
-get_active_span_context_dev <- function() {
-    trc <- get_tracer()
+get_active_span_context_dev <- function(tracer = NULL) {
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span_context()
 }
 
-pack_http_context_dev <- function() {
-    trc <- get_tracer()
+pack_http_context_dev <- function(tracer = NULL) {
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span_context()$to_http_headers()
 }
 
-extract_http_context_dev <- function(headers) {
-    trc <- get_tracer()
+extract_http_context_dev <- function(headers, tracer = NULL) {
+    trc <- get_otel_tracer(tracer)
     trc$extract_http_context(headers)
 }
 
@@ -95,12 +95,17 @@ start_span_dev <- function(
     if (!inherits(tracer, "otel_tracer")) {
       tracer <- get_tracer(tracer)
     }
+    if (is.null(name) && !inherits(tracer, "otel_tracer_noop")) {
+      def <- default_span_name(attributes, parent.frame())
+      name <- def$name
+      attributes <- def$attributes
+    }
     invisible(tracer$start_span(name, attributes, links, options, ...))
 }
 
-end_span_dev <- function(span) {
+end_span_dev <- function(span, status_code = NULL) {
     identity(NULL)
-    span$end()
+    span$end(status_code = status_code)
 }
 
 start_local_active_span_dev <- function(
@@ -115,6 +120,11 @@ start_local_active_span_dev <- function(
 ) {
     if (!inherits(tracer, "otel_tracer")) {
       tracer <- get_tracer(tracer)
+    }
+    if (is.null(name) && !inherits(tracer, "otel_tracer_noop")) {
+      def <- default_span_name(attributes, activation_scope)
+      name <- def$name
+      attributes <- def$attributes
     }
     span <- tracer$start_span(name, attributes, links, options, ...)
     span$activate(

@@ -15,6 +15,9 @@
       $logger_provider
       NULL
       
+      $otel_tracer
+      NULL
+      
       $tracer_app
       NULL
       
@@ -34,6 +37,9 @@
       [1] "bar"
       
       $logger_provider
+      NULL
+      
+      $otel_tracer
       NULL
       
       $mode
@@ -83,4 +89,32 @@
       body(res[[2]])
     Output
       trace_namespace(pkg, inc, exc)
+
+# check_otelsdk_version
+
+    Code
+      check_otelsdk_version()
+    Message
+      otelsdk 0.2.4 is loaded. These otel features need otelsdk 0.2.4.9005 or later:
+      * the `set_attributes()` method of spans
+      * the `boundaries` argument of `create_histogram()`
+      * length one array attributes
+      * keeping the `unset` status of automatically ended spans
+      * the 'otlp/stdout' exporter
+      Update otelsdk to use them.
+
+---
+
+    Code
+      check_otelsdk_version()
+    Condition
+      Warning:
+      otel needs otelsdk 0.2.4 or later, but otelsdk 0.2.3 is loaded. Please update otelsdk.
+
+# setup_otelsdk_check
+
+    Code
+      body(res[[2]])
+    Output
+      check_otelsdk_version()
 

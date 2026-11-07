@@ -66,6 +66,32 @@ get_tracer <- function(
 
 get_tracer_safe <- get_tracer
 
+# Tracer for otel's own use, e.g. to query the active span. These do not
+# depend on the tracer name, so we use a fixed name, and cache the tracer,
+# to avoid looking up the tracer name from the call stack on every call.
+# The cached tracer is only reused if the default tracer provider has
+# not changed, e.g. otelsdk::with_otel_record() sets a new one.
+# If `tracer` is a tracer object or a tracer name, then it is used instead.
+
+otel_tracer_name <- "org.r-lib.otel"
+
+get_otel_tracer <- function(tracer = NULL) {
+  if (inherits(tracer, "otel_tracer")) {
+    return(tracer)
+  }
+  if (!is.null(tracer)) {
+    return(get_tracer(tracer))
+  }
+  provider <- get_default_tracer_provider()
+  cache <- the$otel_tracer
+  if (!is.null(cache) && identical(cache$provider, provider)) {
+    return(cache$tracer)
+  }
+  trc <- get_tracer(otel_tracer_name, provider = provider)
+  the$otel_tracer <- list(provider = provider, tracer = trc)
+  trc
+}
+
 #' Get a logger from the default logger provider
 #'
 #' @param name Name of the new tracer. If missing, then deduced automatically.
@@ -280,6 +306,7 @@ with_active_span_safe <- with_active_span
 #' @export
 #' @usage NULL
 #' @format NULL
+#' @seealso '[Environment Variables]' needed to set OpenTelemetry logging level.
 #' @family OpenTelemetry logs API
 #' @return Not applicable.
 #' @examples
@@ -325,6 +352,17 @@ md_log_severity_levels <- paste0(
 #' This is sometimes useful, to add additional attributes or links to the
 #' currently active span.
 #'
+#' @param tracer Tracer object ([otel_tracer]) or tracer name to use.
+#'   If `NULL`, then otel uses an internal tracer. You usually do not
+#'   need to set this, the active span does not depend on the tracer.
+#'
+#'   Passing a tracer might give the wrong result. If it is a no-op
+#'   tracer, then the result is an invalid span (context), or no HTTP
+#'   headers, even if there is an active span. This happens if the
+#'   tracer's scope is turned off, e.g. via the `OTEL_R_SUPPRESS_SCOPES`
+#'   environment variable, or if the tracer was created before tracing
+#'   was turned on. The default `NULL` does not have this problem.
+#'
 #' @return The active span, an [otel_span] object, if any, or an invalid
 #'   span if there is no active span.
 #' @export
@@ -337,9 +375,9 @@ md_log_severity_levels <- paste0(
 #' fun()
 
 # safe start
-get_active_span <- function() {
+get_active_span <- function(tracer = NULL) {
   tryCatch({                                                         # safe
-    trc <- get_tracer()
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span()
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
@@ -356,6 +394,7 @@ get_active_span <- function() {
 #' Note that logs and metrics instruments automatically use the current
 #' span context, so often you don't need to call this function explicitly.
 #'
+#' @inheritParams get_active_span
 #' @return The active span context, an [otel_span_context] object.
 #' If there is no active span context, then an invalid span context is
 #' returned, i.e. `spc$is_valid()` will be `FALSE` for the returned `spc`.
@@ -372,9 +411,9 @@ get_active_span <- function() {
 #' fun()
 
 # safe start
-get_active_span_context <- function() {
+get_active_span_context <- function(tracer = NULL) {
   tryCatch({                                                         # safe
-    trc <- get_tracer()
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span_context()
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
@@ -391,6 +430,7 @@ get_active_span_context_safe <- get_active_span_context
 #' The returned headers can be sent over HTTP, or set as environment
 #' variables for subprocesses.
 #'
+#' @inheritParams get_active_span
 #' @return A named character vector, with lowercase names. It might be an
 #' empty vector, e.g. if tracing is disabled.
 #'
@@ -402,9 +442,9 @@ get_active_span_context_safe <- get_active_span_context
 #' ctx$is_valid()
 
 # safe start
-pack_http_context <- function() {
+pack_http_context <- function(tracer = NULL) {
   tryCatch({                                                         # safe
-    trc <- get_tracer()
+    trc <- get_otel_tracer(tracer)
     trc$get_active_span_context()$to_http_headers()
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
@@ -422,6 +462,7 @@ pack_http_context_safe <- pack_http_context
 #'
 #' @param headers A named list with one or two strings: `traceparent` is
 #' mandatory, and `tracestate` is optional.
+#' @inheritParams get_active_span
 #'
 #' @return And [otel_span_context] object.
 #'
@@ -430,9 +471,9 @@ pack_http_context_safe <- pack_http_context
 #' @inherit pack_http_context examples
 
 # safe start
-extract_http_context <- function(headers) {
+extract_http_context <- function(headers, tracer = NULL) {
   tryCatch({                                                         # safe
-    trc <- get_tracer()
+    trc <- get_otel_tracer(tracer)
     trc$extract_http_context(headers)
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
@@ -463,7 +504,7 @@ extract_http_context_safe <- extract_http_context
 #' It is a good idea to end spans created with `start_span()` in an
 #' [base::on.exit()] call.
 #'
-#' @param name `r doc_arg()[["span-name"]]`
+#' @param name `r doc_arg()[["span-name-default"]]`
 #' @param attributes `r doc_arg()[["attributes"]]`
 #' @param links `r doc_arg()[["links"]]`
 #' @param options `r doc_arg()[["span-options"]]`
@@ -514,6 +555,11 @@ start_span <- function(
     if (!inherits(tracer, "otel_tracer")) {
       tracer <- get_tracer(tracer)
     }
+    if (is.null(name) && !inherits(tracer, "otel_tracer_noop")) {
+      def <- default_span_name(attributes, parent.frame())
+      name <- def$name
+      attributes <- def$attributes
+    }
     invisible(tracer$start_span(name, attributes, links, options, ...))
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
@@ -533,6 +579,9 @@ start_span_safe <- start_span
 #'
 #'
 #' @param span The span to end.
+#' @param status_code Span status code to set before ending the span.
+#'   Possible values: `r paste(span_status_codes, collapse = ", ")`.
+#'   See [span_status_codes]. If `NULL`, the status is not changed.
 #' @return Nothing.
 #'
 #' @inherit start_span examples
@@ -541,10 +590,10 @@ start_span_safe <- start_span
 #' @export
 
 # safe start
-end_span <- function(span) {
+end_span <- function(span, status_code = NULL) {
   tryCatch({                                                         # safe
     identity(NULL)
-    span$end()
+    span$end(status_code = status_code)
   }, error = function(err) {                                         # safe
     errmsg("OpenTelemetry error: ", conditionMessage(err))           # safe
     invisible(NULL)                                                  # safe
@@ -602,6 +651,11 @@ start_local_active_span <- function(
     if (!inherits(tracer, "otel_tracer")) {
       tracer <- get_tracer(tracer)
     }
+    if (is.null(name) && !inherits(tracer, "otel_tracer_noop")) {
+      def <- default_span_name(attributes, activation_scope)
+      name <- def$name
+      attributes <- def$attributes
+    }
     span <- tracer$start_span(name, attributes, links, options, ...)
     span$activate(
       activation_scope = activation_scope, end_on_exit = end_on_exit)
@@ -629,6 +683,7 @@ start_local_active_span_safe <- start_local_active_span
 #' @return `TRUE` is OpenTelemetry tracing is active, `FALSE` otherwise.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry tracing.
 #' @family OpenTelemetry trace API
 #' @examples
 #' fun <- function() {
@@ -668,6 +723,7 @@ is_tracing_enabled_safe <- is_tracing_enabled
 #' @return `TRUE` is OpenTelemetry logging is active, `FALSE` otherwise.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry logging.
 #' @family OpenTelemetry logs API
 #' @examples
 #' fun <- function() {
@@ -707,6 +763,7 @@ is_logging_enabled_safe <- is_logging_enabled
 #' `FALSE` otherwise.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry recording.
 #' @family OpenTelemetry metrics API
 #' @examples
 #' fun <- function() {
@@ -745,6 +802,7 @@ is_measuring_enabled_safe <- is_measuring_enabled
 #' @return The logger, invisibly.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry logging.
 #' @family OpenTelemetry logs API
 #' @examples
 #' host <- "my.db.host"
@@ -941,6 +999,7 @@ log_fatal_safe <- log_fatal
 #'
 #' @return The counter object ([otel_counter]), invisibly.
 #'
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry recording.
 #' @family OpenTelemetry metrics instruments
 #' @family OpenTelemetry metrics API
 #' @export
@@ -984,6 +1043,7 @@ counter_add_safe <- counter_add
 #'
 #' @return The up-down counter object ([otel_up_down_counter]), invisibly.
 #'
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry recording.
 #' @family OpenTelemetry metrics instruments
 #' @family OpenTelemetry metrics API
 #' @export
@@ -1027,6 +1087,7 @@ up_down_counter_add_safe <- up_down_counter_add
 #' @return The histogram object ([otel_histogram]), invisibly.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry recording.
 #' @family OpenTelemetry metrics instruments
 #' @family OpenTelemetry metrics API
 #' @examples
@@ -1069,6 +1130,7 @@ histogram_record_safe <- histogram_record
 #' @return The gauge object ([otel_gauge]), invisibly.
 #'
 #' @export
+#' @seealso '[Environment Variables]' needed to enable OpenTelemetry recording.
 #' @family OpenTelemetry metrics instruments
 #' @family OpenTelemetry metrics API
 #' @examples

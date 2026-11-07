@@ -7,7 +7,19 @@
       methods:
         get_tracer(name, version, schema_url, attributes)
         flush()
+        shutdown()
         get_spans()
+
+# format.otel_tracer_provider, shutdown
+
+    Code
+      tp
+    Output
+      <otel_tracer_provider_test/otel_tracer_provider>
+      methods:
+        get_tracer(name, version, schema_url, attributes)
+        flush()
+        shutdown()
 
 # format.otel_tracer
 
@@ -34,6 +46,7 @@
         is_recording()
         record_exception(error_condition, attributes, ...)
         set_attribute(name, value)
+        set_attributes(attributes)
         set_status(status_code, description)
         update_name(name)
 
@@ -61,6 +74,18 @@
       methods:
         get_logger(name, minimum_severity, version, schema_url, attributes)
         flush()
+        shutdown()
+
+# format.otel_logger_provider, shutdown
+
+    Code
+      lp
+    Output
+      <otel_logger_provider_test/otel_logger_provider>
+      methods:
+        get_logger(name, minimum_severity, version, schema_url, attributes)
+        flush()
+        shutdown()
 
 # format.otel_logger
 
@@ -101,7 +126,7 @@
       methods:
         create_counter(name, description, unit)
         create_up_down_counter(name, description, unit)
-        create_histogram(name, description, unit)
+        create_histogram(name, description, unit, boundaries)
         create_gauge(name, description, unit)
 
 # format.otel_counter
